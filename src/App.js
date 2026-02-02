@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import "./App.css"; // Import the styles
 import FileExplorer from "./components/FileExplorer";
 import EditorArea from "./components/EditorArea";
 import Preview from "./components/Preview";
@@ -9,15 +10,13 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 function flattenWorkspace(tree, basePath = "") {
   let result = [];
 
-  tree.forEach(item => {
-    const fullPath = basePath
-      ? `${basePath}/${item.name}`
-      : item.name;
+  tree.forEach((item) => {
+    const fullPath = basePath ? `${basePath}/${item.name}` : item.name;
 
     if (item.type === "file") {
       result.push({
         name: fullPath.replace("src/", ""), // Sandpack expects root files
-        content: item.content
+        content: item.content,
       });
     }
 
@@ -31,9 +30,71 @@ function flattenWorkspace(tree, basePath = "") {
 
 /* ================= MAIN APP ================= */
 
+const QUESTIONS = ["Create a button that increases a counter value when clicked.",
+  "Design a card component that displays an image, title, and description.",
+  "Build a modal popup that opens and closes using a button."];
+
+
+
+
 function App() {
+  const [isRoundActive, setIsRoundActive] = useState(false);
+
+  const [gameOver, setGameOver] = useState(false);
+  const [showQuestion, setShowQuestion] = useState(false);
+
+
+function startChallenge() {
+
+  // GAME RESET
+  if (gameOver) {
+    setRound(1);
+    setSubmissionLog([]);
+    setGameOver(false);
+  }
+
+  // NEXT ROUND AFTER SUBMIT
+  if (overlayMode === "submit" && round < TOTAL_ROUNDS) {
+    setRound(prev => prev + 1);
+    setIsRoundActive(false); // new round not started yet
+  }
+
+  // START ROUND TIMER ONLY ON NEW ROUND
+  if (!isRoundActive) {
+    setRoundStartTime(Date.now()); // stopwatch start
+    setIsRoundActive(true);
+  }
+
+  setEditorLocked(false);
+  setIsRunning(true);
+setTimeLeft(ROUND_TIME);
+  setShowQuestion(true);
+}
+
+
+
+
+  const TOTAL_ROUNDS = 3;
+  const ROUND_TIME = 10; // seconds
+
+  const [round, setRound] = useState(1);
+  const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
+  const [isRunning, setIsRunning] = useState(false);
+  const [editorLocked, setEditorLocked] = useState(true);
+  const [showOverlay, setShowOverlay] = useState(false);
+
+  const [submissionLog, setSubmissionLog] = useState([]);
+  const [roundStartTime, setRoundStartTime] = useState(null);
 
   /* -------- Workspace Tree -------- */
+
+  function handleSwitchOnly() {
+    setOverlayMode("switch");
+    setEditorLocked(true);
+    setIsRunning(false);
+    setShowOverlay(true);
+  
+  }
 
   const [workspace, setWorkspace] = useState([
     {
@@ -49,7 +110,7 @@ import React from "react";
 export default function App() {
   return <h1>let's go for a tea break 🍵🍵</h1>;
 }
-`
+`,
         },
         {
           type: "file",
@@ -62,16 +123,17 @@ import App from "./App";
 const container = document.getElementById("root");
 const root = createRoot(container);
 root.render(<App />);
-`
-        }
-      ]
+`,
+        },
+      ],
     },
     {
       type: "folder",
       name: "components",
-      children: []
-    }
+      children: [],
+    },
   ]);
+  const [overlayMode, setOverlayMode] = useState("switch");
 
   /* -------- Derived Flat Files For Preview -------- */
 
@@ -94,7 +156,7 @@ root.render(<App />);
 
   function updateFileContent(path, newContent) {
     function update(nodes) {
-      return nodes.map(node => {
+      return nodes.map((node) => {
         if (node.type === "file" && path.endsWith(node.name)) {
           return { ...node, content: newContent };
         }
@@ -102,7 +164,7 @@ root.render(<App />);
         if (node.type === "folder") {
           return {
             ...node,
-            children: update(node.children)
+            children: update(node.children),
           };
         }
 
@@ -110,274 +172,362 @@ root.render(<App />);
       });
     }
 
-    setWorkspace(prev => update(prev));
+    setWorkspace((prev) => update(prev));
   }
 
   /* ================= UI ================= */
 
-function createItem(parentPath, type) {
-  const name = prompt(`Enter ${type} name`);
-  if (!name) return;
+  function createItem(parentPath, type) {
+    const name = prompt(`Enter ${type} name`);
+    if (!name) return;
 
-  const newItem =
-    type === "file"
-      ? { type: "file", name, content: "" }
-      : { type: "folder", name, children: [] };
+    const newItem =
+      type === "file"
+        ? { type: "file", name, content: "" }
+        : { type: "folder", name, children: [] };
 
-  // ROOT LEVEL CREATE
-  if (!parentPath || parentPath === "") {
-    setWorkspace(prev => [...prev, newItem]);
-    return;
-  }
+    // ROOT LEVEL CREATE
+    if (!parentPath || parentPath === "") {
+      setWorkspace((prev) => [...prev, newItem]);
+      return;
+    }
 
-  function update(nodes, parts) {
-    return nodes.map(node => {
-      if (node.type === "folder" && node.name === parts[0]) {
+    function update(nodes, parts) {
+      return nodes.map((node) => {
+        if (node.type === "folder" && node.name === parts[0]) {
+          if (parts.length === 1) {
+            return {
+              ...node,
+              children: [...node.children, newItem],
+            };
+          }
 
-        if (parts.length === 1) {
           return {
             ...node,
-            children: [...node.children, newItem]
+            children: update(node.children, parts.slice(1)),
           };
         }
 
-        return {
-          ...node,
-          children: update(node.children, parts.slice(1))
-        };
-      }
-
-      return node;
-    });
-  }
-
-  setWorkspace(prev => update(prev, parentPath.split("/")));
-}
-
-/**============================================================ */
-function renameItem(path) {
-  const newName = prompt("Enter new name");
-  if (!newName) return;
-
-  function update(nodes, parts) {
-    return nodes.map(node => {
-      if (node.name === parts[0]) {
-        if (parts.length === 1) {
-          return { ...node, name: newName };
-        }
-
-        return {
-          ...node,
-          children: update(node.children, parts.slice(1))
-        };
-      }
-      return node;
-    });
-  }
-
-  setWorkspace(prev =>
-    update(prev, path.split("/"))
-  );
-}
-/**======================================================= */
-function deleteItem(path) {
-
-  function update(nodes, parts) {
-    if (parts.length === 1) {
-      return nodes.filter(n => n.name !== parts[0]);
+        return node;
+      });
     }
 
-    return nodes.map(node => {
-      if (node.name === parts[0]) {
-        return {
-          ...node,
-          children: update(node.children, parts.slice(1))
-        };
-      }
-      return node;
-    });
+    setWorkspace((prev) => update(prev, parentPath.split("/")));
   }
 
-  setWorkspace(prev =>
-    update(prev, path.split("/"))
-  );
+  /**============================================================ */
+  function renameItem(path) {
+    const newName = prompt("Enter new name");
+    if (!newName) return;
+
+    function update(nodes, parts) {
+      return nodes.map((node) => {
+        if (node.name === parts[0]) {
+          if (parts.length === 1) {
+            return { ...node, name: newName };
+          }
+
+          return {
+            ...node,
+            children: update(node.children, parts.slice(1)),
+          };
+        }
+        return node;
+      });
+    }
+
+    setWorkspace((prev) => update(prev, path.split("/")));
+  }
+  /**======================================================= */
+  function deleteItem(path) {
+    function update(nodes, parts) {
+      if (parts.length === 1) {
+        return nodes.filter((n) => n.name !== parts[0]);
+      }
+
+      return nodes.map((node) => {
+        if (node.name === parts[0]) {
+          return {
+            ...node,
+            children: update(node.children, parts.slice(1)),
+          };
+        }
+        return node;
+      });
+    }
+
+    setWorkspace((prev) => update(prev, path.split("/")));
+  }
+useEffect(() => {
+  if (!isRunning) return;
+
+  const timer = setInterval(() => {
+    setTimeLeft(prev => {
+      if (prev === 1) {
+
+        clearInterval(timer);
+
+        // Stop timer first
+        setIsRunning(false);
+
+        // Delay overlay UI update
+        setTimeout(() => {
+          handleSwitchOnly();
+        }, 0);
+
+        return 0;
+      }
+
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(timer);
+
+}, [isRunning]);
+
+
+ function handleSubmit() {
+
+  if (!isRunning || !roundStartTime) return;
+
+  setOverlayMode("submit");
+  setEditorLocked(true);
+  setIsRunning(false);
+  setShowOverlay(true);
+  setShowQuestion(false);
+
+  setIsRoundActive(false); // freeze round time
+
+  logSubmission("MANUAL");
+
+  if (round === TOTAL_ROUNDS) {
+  setGameOver(true);
+}
 }
 
+  function logSubmission(type) {
+    const entry = {
+      round,
+      type,
+      timeTaken: Math.floor((Date.now() - roundStartTime) / 1000),
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    setSubmissionLog((prev) => [...prev, entry]);
+  }
+function closeOverlayOnly() {
+
+  setShowOverlay(false);
+
+  // AUTO CONTINUE TURN ONLY
+  if (overlayMode === "switch") {
+
+    setEditorLocked(false);
+    setIsRunning(true);
+
+    // DO NOT reset timer here -- CHANGED per request to Loop Timer
+    setTimeLeft(ROUND_TIME);
+    // DO NOT touch roundStartTime
+  }
+
+}
+const safeTime = Math.max(0, timeLeft);
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        background: "#1e1e1e",
-        color: "#cccccc"
-      }}
-    >
+    <div className="app-container">
+      {showOverlay && (
+        <div className="overlay-backdrop">
+          <div className="overlay-card">
+            <h2 className="overlay-title">
+            </h2>
 
-      <Group direction="horizontal" style={{ height: "100%" }}>
+            <p className="overlay-message">
+              {overlayMode === "submit"
+                ? "Click Start to begin next round"
+                : "Switch Player Now"}
+            </p>
 
+            <button
+              onClick={closeOverlayOnly}
+              className="btn btn-primary"
+              style={{ width: "100%", justifyContent: "center", padding: "10px" }}
+            >
+              {gameOver ? "Restart Game ▶" : "Start Next ▶"}
+            </button>
+            <div className="log-container">
+              <div className="log-header">Submission Log</div>
+              <div className="log-list">
+                {submissionLog.map((log, i) => (
+                  <div key={i} className="log-item">
+                    <span>Round {log.round} ({log.type})</span>
+                    <span style={{color: "#cbd5e1"}}>{log.timeTaken}s</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+{showQuestion && (
+  <div className="question-banner">
+    <span className="question-icon">🧠</span> 
+    {QUESTIONS[round - 1]}
+  </div>
+)}
+      <Group
+      autoSaveId={null}
+        id="main-layout"
+        orientation="horizontal"
+        style={{
+          height: "100%",
+          width: "100%",
+        }}
+      >
         {/* ================= FILE EXPLORER ================= */}
 
-        <Panel defaultSize={15} minSize={10}>
-
+        <Panel id="file-explorer" defaultSize={15} minSize={5}>
+          <div style={{ height: "100%", minWidth: 0, overflow: "hidden" }}>
             <FileExplorer
-          workspace={workspace}
-          onSelect={(path) => {
-            setActiveFilePath(path);
-            setActiveTab(path);
+              workspace={workspace}
+              onSelect={(path) => {
+                setActiveFilePath(path);
+                setActiveTab(path);
 
-            setOpenTabs(prev =>
-              prev.includes(path) ? prev : [...prev, path]
-            );
-          }}
-          onCreate={createItem}
-          onRename={renameItem}
-          onDelete={deleteItem}
-        />
-
-
+                setOpenTabs((prev) =>
+                  prev.includes(path) ? prev : [...prev, path],
+                );
+              }}
+              onCreate={createItem}
+              onRename={renameItem}
+              onDelete={deleteItem}
+            />
+          </div>
         </Panel>
 
-        <Separator
-          style={{
-            width: "4px",
-            background: "#333",
-            cursor: "col-resize"
-          }}
-        />
+        <Separator className="resize-handle" />
 
         {/* ================= EDITOR ================= */}
 
-        <Panel defaultSize={55} minSize={30}>
-
+        <Panel id="editor" defaultSize={55} minSize={20}>
           <div
             style={{
               height: "100%",
               display: "flex",
-              flexDirection: "column"
+              flexDirection: "column",
+              overflow: "hidden",
+              minWidth: 0,
+              minHeight: 0,
             }}
           >
-
             {/* ===== TOP BAR ===== */}
 
-            <div
-              style={{
-                padding: "6px",
-                background: "#252526",
-                borderBottom: "1px solid #333"
-              }}
-            >
-              <button
-                onClick={() => setRunProject(p => p + 1)}
-                style={{
-                  background: "#0e639c",
-                  color: "#fff",
-                  border: "none",
-                  padding: "6px 12px",
-                  cursor: "pointer",
-                  borderRadius: "4px"
-                }}
-              >
-                ▶ Run
-              </button>
+            <div className="top-bar">
+              <div className="top-bar-left">
+                <button
+                    onClick={() => setRunProject((p) => p + 1)}
+                    className="btn btn-success"
+                >
+                    ▶ Run
+                </button>
+                
+                <div className="info-badge">
+                  Round: {round}/{TOTAL_ROUNDS}
+                </div>
+              </div>
+
+              <div className="top-bar-right">
+                <div className="info-badge timer-badge">
+⏱ {Math.floor(safeTime / 60)}:{String(safeTime % 60).padStart(2, "0")}
+                </div>
+
+                <button 
+                  onClick={startChallenge} 
+                  disabled={isRunning && !gameOver}
+                  className="btn"
+                >
+                  ▶ Start
+                </button>
+
+                <button 
+                  onClick={handleSubmit} 
+                  disabled={editorLocked}
+                  className="btn btn-primary"
+                >
+                  ✅ Submit
+                </button>
+              </div>
             </div>
 
             {/* ===== TABS ===== */}
 
-            <div
-              style={{
-                display: "flex",
-                background: "#2d2d2d",
-                borderBottom: "1px solid #333"
-              }}
-            >
-
-              {openTabs.map(tab => (
-
+            <div className="tabs-container">
+              {openTabs.map((tab) => (
                 <div
                   key={tab}
                   onClick={() => {
                     setActiveTab(tab);
                     setActiveFilePath(tab);
                   }}
-                  style={{
-                    padding: "8px 12px",
-                    cursor: "pointer",
-                    background: activeTab === tab ? "#1e1e1e" : "#2d2d2d",
-                    borderBottom:
-                      activeTab === tab
-                        ? "2px solid #007acc"
-                        : "2px solid transparent"
-                  }}
+                  className={`tab-item ${activeTab === tab ? "active" : ""}`}
                 >
-
                   {tab.split("/").pop()}
 
                   <span
                     onClick={(e) => {
                       e.stopPropagation();
 
-                      setOpenTabs(prev => prev.filter(t => t !== tab));
+                      setOpenTabs((prev) => prev.filter((t) => t !== tab));
 
                       if (activeTab === tab) {
-                        const remaining = openTabs.filter(t => t !== tab);
+                        const remaining = openTabs.filter((t) => t !== tab);
                         const next = remaining[remaining.length - 1];
                         setActiveTab(next || null);
                         setActiveFilePath(next || null);
                       }
                     }}
-                    style={{
-                      marginLeft: "8px",
-                      color: "#ff5f56",
-                      cursor: "pointer"
-                    }}
+                    className="tab-close"
                   >
                     ✖
                   </span>
-
                 </div>
-
               ))}
-
             </div>
 
             {/* ===== EDITOR AREA ===== */}
 
             <EditorArea
+              disabled={editorLocked}
               activePath={activeFilePath}
               workspace={workspace}
               updateFile={updateFileContent}
             />
-
           </div>
-
         </Panel>
 
-        <Separator
-          style={{
-            width: "4px",
-            background: "#333",
-            cursor: "col-resize"
-          }}
-        />
+        <Separator className="resize-handle" />
 
         {/* ================= PREVIEW ================= */}
 
-        <Panel defaultSize={30} minSize={20}>
-
-          <div style={{ height: "100%" }}>
-
+        <Panel id="preview" defaultSize={30} minSize={10}>
+          <div
+            style={{
+              height: "100%",
+              width: "100%",
+              overflow: "hidden",
+              minWidth: 0,
+            }}
+          >
             <Preview
               files={flatFiles}
               runProject={runProject}
               visible={runProject > 0}
             />
-
           </div>
-
         </Panel>
-
       </Group>
-
     </div>
   );
 }

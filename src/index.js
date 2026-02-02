@@ -4,6 +4,20 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Suppress benign ResizeObserver error
+// Polyfill to fix "ResizeObserver loop completed with undelivered notifications"
+const ResizeObserverOriginal = window.ResizeObserver;
+window.ResizeObserver = class ResizeObserver extends ResizeObserverOriginal {
+  constructor(callback) {
+    super((entries, observer) => {
+      window.requestAnimationFrame(() => {
+        if (!Array.isArray(entries) || !entries.length) return;
+        callback(entries, observer);
+      });
+    });
+  }
+};
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

@@ -78,19 +78,38 @@ export default function Preview({ files, runProject, visible }) {
   }}
 >
 
-      <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div
+  style={{
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    minWidth: 0
+  }}
+>
 
-        <div style={{
-  flex: 1,
-  display: visible ? "block" : "none"
-}}>
-  <SandpackPreview 
-  style={{height:"70vh"}}
+
+<div
+  style={{
+    flex: 1,
+    display: visible ? "flex" : "none",
+    minHeight: 0,
+    minWidth: 0
+  }}
+>
+
+<SandpackPreview
+  style={{
+    height: "100%",
+    width: "100%",
+    minWidth: 0,
+    minHeight: 0
+  }}
   showOpenInCodeSandbox={false}
   showRefreshButton={false}
   showRestartButton={false}
+/>
 
-  />
 </div>
 
 {!visible && (
@@ -106,7 +125,8 @@ export default function Preview({ files, runProject, visible }) {
 )}
         <hr />
 
-        <SandpackConsole style={{ height: "30vh", background:"black", fontSize:"large",  }} />
+        <SandpackConsole style={{  height: "30%",
+    minHeight: "120px", background:"black", fontSize:"large",  }} />
 
       </div>
     </SandpackProvider>
