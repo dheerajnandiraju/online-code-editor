@@ -511,22 +511,25 @@ const safeTime = Math.max(0, timeLeft);
 
         {/* ================= PREVIEW ================= */}
 
-        <Panel id="preview" defaultSize={30} minSize={10}>
-          <div
-            style={{
-              height: "100%",
-              width: "100%",
-              overflow: "hidden",
-              minWidth: 0,
-            }}
-          >
-            <Preview
-              files={flatFiles}
-              runProject={runProject}
-              visible={runProject > 0}
-            />
-          </div>
-        </Panel>
+<Panel id="preview" defaultSize={30} minSize={10}>
+  <div
+    style={{
+      height: "100%",
+      width: "100%",
+      display: "flex",
+      flex: 1,
+      minWidth: 0,
+      minHeight: 0
+    }}
+  >
+    <Preview
+      files={flatFiles}
+      runProject={runProject}
+      visible={runProject > 0}
+    />
+  </div>
+</Panel>
+
       </Group>
     </div>
   );

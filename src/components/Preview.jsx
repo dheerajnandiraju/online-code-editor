@@ -1,7 +1,6 @@
 import {
   SandpackProvider,
-  SandpackPreview,
-  SandpackConsole
+  SandpackPreview
 } from "@codesandbox/sandpack-react";
 
 export default function Preview({ files, runProject, visible }) {
@@ -30,105 +29,68 @@ export default function Preview({ files, runProject, visible }) {
   });
 
   return (
-<SandpackProvider
-  key={runProject}
-  template="react"
-  files={sandpackFiles}
-  customSetup={{
-    entry: "/index.js",
-   dependencies: {
-  react: "18.2.0",
-  "react-dom": "18.2.0",
-
-  // Routing
-  "react-router-dom": "6.22.3",
-
-  // API
-  axios: "1.6.7",
-
-  // State
-  "@reduxjs/toolkit": "2.2.3",
-  "react-redux": "9.1.0",
-
-  // UI
-  "@mui/material": "5.15.15",
-  "@emotion/react": "11.11.4",
-  "@emotion/styled": "11.11.0",
-
-  // Icons
-  "react-icons": "5.0.1",
-
-  // Forms
-  "react-hook-form": "7.51.2",
-
-  // Animation
-  "framer-motion": "11.0.8",
-
-  // Charts
-  recharts: "2.12.2",
-
-  // Utils
-  dayjs: "1.11.10",
-  lodash: "4.17.21"
-}
-  
-  }}
-  options={{
-    externalResources: []
-  }}
->
-
+    <SandpackProvider
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        minWidth: 0,
+        minHeight: 0,
+        overflow: "hidden"
+      }}
+      key={runProject}
+      template="react"
+      files={sandpackFiles}
+      customSetup={{
+        entry: "/index.js",
+        dependencies: {
+          react: "18.2.0",
+          "react-dom": "18.2.0"
+        }
+      }}
+    >
       <div
-  style={{
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    minWidth: 0
-  }}
->
-
-
-<div
-  style={{
-    flex: 1,
-    display: visible ? "flex" : "none",
-    minHeight: 0,
-    minWidth: 0
-  }}
->
-
-<SandpackPreview
-  style={{
-    height: "100%",
-    width: "100%",
-    minWidth: 0,
-    minHeight: 0
-  }}
-  showOpenInCodeSandbox={false}
-  showRefreshButton={false}
-  showRestartButton={false}
-/>
-
-</div>
-
-{!visible && (
-  <div style={{
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#888"
-  }}>
-    Click ▶ Run to start preview
-  </div>
-)}
-        <hr />
-
-        <SandpackConsole style={{  height: "30%",
-    minHeight: "120px", background:"black", fontSize:"large",  }} />
-
+        style={{
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flex: 1,
+          minWidth: 0,
+          minHeight: 0,
+          overflow: "hidden"
+        }}
+      >
+        {visible ? (
+          <SandpackPreview
+            style={{
+              flex: 1,
+              height: "100%",
+              width: "100%",
+              minWidth: 0
+            }}
+            showOpenInCodeSandbox={false}
+            showRefreshButton={false}
+            showRestartButton={false}
+          />
+        ) : (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#888",
+              background: "#1e1e1e"
+            }}
+          >
+            Click ▶ Run to start preview
+          </div>
+        )}
       </div>
+
     </SandpackProvider>
   );
+
+
 }
