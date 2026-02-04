@@ -75,7 +75,7 @@ setTimeLeft(ROUND_TIME);
 
 
   const TOTAL_ROUNDS = 3;
-  const ROUND_TIME = 10; // seconds
+  const ROUND_TIME = 180; // seconds
 
   const [round, setRound] = useState(1);
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
