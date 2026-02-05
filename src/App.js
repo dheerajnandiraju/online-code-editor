@@ -30,10 +30,9 @@ function flattenWorkspace(tree, basePath = "") {
 
 /* ================= MAIN APP ================= */
 
-const QUESTIONS = ["Create a button that increases a counter value when clicked.",
-  "Design a card component that displays an image, title, and description.",
-  "Build a modal popup that opens and closes using a button."];
-
+const QUESTIONS = ["Text Overwrite on Button Click.Initially display some default text (e.g., 'Hello'). Provide an input field and a button. When the user enters text and clicks the button, overwrite the initially displayed text with the entered text.",
+  "Countdown to 14 February.Calculate how much time is left until 14th February using the current date and time (Date.now()) and display the remaining time dynamically.",
+  "Simple Task Manager.Create a simple task manager where the user can add tasks using an input field and button, display the list of added tasks, and remove individual tasks from the list on button click."];
 
 
 
